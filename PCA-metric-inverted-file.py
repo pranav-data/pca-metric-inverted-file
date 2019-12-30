@@ -1,44 +1,47 @@
-# %% codecell
+# %% codecell - Implementing PCA algorithm along the Principal component with highest explained variance
+
+#Nomenclature: object = row in dataset, reference = subset of objects to aid in querying
 from sklearn.decomposition import PCA
 
 import pandas as pd
 import numpy as np
 import random
 
+# Function to estimate Spearman footrule distance
 def compute_d_sfd(gdf_object,gdf_ref):
     #columnwise ie feature-wise estimation of distance of object to reference
     dist=np.abs(gdf_object[:]-gdf_ref[:])
     return dist
 
-#Importing all objects as a DataFrame from the data file after selecting 1000 references at random andremoving them as data objects
+#Importing all objects as a DataFrame from the csv file
 all_objects = pd.read_csv('my_df_cleaned8.csv')
 
-#Testing the code for a small subset of objects - sending all objects and references to the program as numpy Arrays for speed
+#Converting to numpy array for compute speed
 my_objects_small = np.array(all_objects.iloc[:])
 
 pca1 = PCA(n_components=1)
 data=my_objects_small
-y=np.array(np.round(pca1.fit_transform(data),0))
+y=np.array(np.round(pca1.fit_transform(data),1))
 y1=pca1.explained_variance_ratio_
 
-#print(f'minimum:{min(y)}, maximum: {max(y)}, mean absolute value: {np.mean(abs(y))}')
+# Printing the explained variance in % from major principal component alone
 print(f'Explained variance in %: {y1*100}')
 
-#faster - use this
-principal_axis_targets = np.array(np.round(np.linspace(min(y),max(y),1000),0))
+#Selecting 1000 targets along the range of major principal component (rounded to one decimal point)
+principal_axis_targets = np.array(np.round(np.linspace(min(y),max(y),1000),1))
 
 
 closest_obj_index = []
 for ref in range(1000):
+    # Duplicating each target for each object to apply accelerated matrix numpy operations
     array_principal_axis_targets = [principal_axis_targets[ref] for x in range(y.shape[0])]
+    # Selecting the closest object index position for each of the 1000 targets
     B = np.argmin(np.abs(array_principal_axis_targets-y),axis=0)
     closest_obj_index.append(B)
-    y[B]=1000000
+    y[B]=1000000 # Reassigning each closest object away from transformed dataset to obtain 1000 unique objects close to targets
     if (np.mod(ref,10)==0):
-        print(f'ref#{ref} computed')
-print(f'Unique references generated:{len(np.unique(closest_obj_index))}')
-
-
+        print(f'ref#{ref} computed') #Progress tracker
+print(f'Unique references generated:{len(np.unique(closest_obj_index))}') #Rechecking uniqueness
 
 
 
