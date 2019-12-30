@@ -37,7 +37,7 @@ for ref in range(1000):
         print(f'ref#{ref} computed') #Progress tracker
 print(f'Unique references generated:{len(np.unique(closest_obj_index))}') #Rechecking uniqueness
 
-
+#*******************************************************************************
 
 
 # %% codecell - References  1000 targets & Objects - remaining objects
@@ -45,6 +45,7 @@ my_ref_small = np.array(all_objects.iloc[[x[0] for x in closest_obj_index]])
 all_objects.drop([x[0] for x in closest_obj_index],axis=0,inplace=True)
 my_objects_small=np.array(all_objects.iloc[:])
 
+#*******************************************************************************
 # %% codecell - Generating Metric Inverted file
 
 # Function to evaluate spearman footrule distance
@@ -53,15 +54,17 @@ def compute_d_sfd(gdf_object,gdf_ref):
     dist=np.sum(np.abs(gdf_object[:]-gdf_ref[:]),axis=1)
     return dist
 
+# List to store 10 closest references with their corresponding ranks (0 to 9) for each object
+# also known in literature as L~OR
 obj_to_ref = []
 
 
 for obj in range(len(my_objects_small)):
 
-    # matrix operation A - B after duplication each object to length of reference list for parallelized computing
+    # Columnwise sum after matrix operation A - B , on duplication each object to length of reference list for parallelized computing
     distance_ref=compute_d_sfd([my_objects_small[obj][:] for i in range(my_ref_small.shape[0])],my_ref_small)
 
-    #Partial sorting and slicing top 10 ranks through argpartition  function
+    #Partial sorting and slicing top 10 ranks through argpartition function
     top_ten_unsorted_indexes = np.argpartition(distance_ref,10)[:10]
 
     top_ten_unsorted_values=[]
@@ -78,18 +81,18 @@ for obj in range(len(my_objects_small)):
     #Append the ranks to a new list. I found dictionaries proved slow, as they arent as well optimized as numpy arrays for computation and manipulation
     obj_to_ref.append(np.array(ranks))
 
-    #Monitor compute status for every 10,000 objects
+    #Monitor progress for every 10,000 objects
     if(np.mod(obj,10000)==0):
         print(f'LOR computed for {obj}')
 
 #Convert entire list of ranks for each object as numpy array
 obj_to_ref = np.array(obj_to_ref)
 
-#Open file to output MIF, as an appendable state of .txt file. .csv files took longer to write
+#Open file to output Metric inverted file aka MIF, as an appendable state of .txt file
 f = open("output full MIF - PCA.txt", "a")
 MIF_file=[]
 
-#Object list and corresponding rank for each reference
+# List of tuples -(object number,corresponding rank) for each reference derived from obj_to_ref
 for reference in range(len(my_ref_small)):
 
     # Try block to handle references that are not close to any object, and continue appending the text file
@@ -97,12 +100,11 @@ for reference in range(len(my_ref_small)):
 
         y=np.argwhere(obj_to_ref==reference)
         tup=[(int(z[0]),int(z[1])) for z in y]
-        #tup=sorted(tup,key=lambda x:x[1])
 
         print(str('ref_no')+' '+str(reference)+':'+'\t',tup,file=f)
         MIF_file.append(tup)
 
-        print(f'ref#{reference} data appended')
+        print(f'ref#{reference} data appended') #Progress tracker
 
 
     except:
@@ -111,7 +113,7 @@ for reference in range(len(my_ref_small)):
 
 f.close()
 
-
+#*******************************************************************************
 
 # %% codecell
 trials=input('enter the number of random queries among the list of objects to test:')
