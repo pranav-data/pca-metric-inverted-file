@@ -7,12 +7,6 @@ import pandas as pd
 import numpy as np
 import random
 
-# Function to estimate Spearman footrule distance
-def compute_d_sfd(gdf_object,gdf_ref):
-    #columnwise ie feature-wise estimation of distance of object to reference
-    dist=np.abs(gdf_object[:]-gdf_ref[:])
-    return dist
-
 #Importing all objects as a DataFrame from the csv file
 all_objects = pd.read_csv('my_df_cleaned8.csv')
 
@@ -46,7 +40,7 @@ print(f'Unique references generated:{len(np.unique(closest_obj_index))}') #Reche
 
 
 
-# %% codecell
+# %% codecell - References  1000 targets & Objects - remaining objects
 my_ref_small = np.array(all_objects.iloc[[x[0] for x in closest_obj_index]])
 all_objects.drop([x[0] for x in closest_obj_index],axis=0,inplace=True)
 my_objects_small=np.array(all_objects.iloc[:])
