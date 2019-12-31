@@ -8,7 +8,7 @@ import numpy as np
 import random
 
 #Importing all objects as a DataFrame from the csv file
-all_objects = pd.read_csv('my_df_cleaned8.csv')
+all_objects = pd.read_csv('cleaned_data.csv')
 
 #Converting to numpy array for compute speed
 my_objects_small = np.array(all_objects.iloc[:])
