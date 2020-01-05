@@ -13,10 +13,10 @@ import random
 all_objects = pd.read_csv('D:\Github\pca-mif\cleaned_data.csv')
 
 # Converting to numpy array for compute speed
-my_objects_small = np.array(all_objects.iloc[:])
+my_objects = np.array(all_objects.iloc[:])
 
 pca1 = PCA(n_components=1)
-data = my_objects_small
+data = my_objects
 y = np.array(np.round(pca1.fit_transform(data), 0))
 y1 = pca1.explained_variance_ratio_
 
@@ -43,9 +43,9 @@ print(f'Unique references generated:{len(np.unique(closest_obj_index))}')  # Rec
 
 
 # %% codecell - References  1000 targets & Objects - remaining objects
-my_ref_small = np.array(all_objects.iloc[[x[0] for x in closest_obj_index]])
+my_refs = np.array(all_objects.iloc[[x[0] for x in closest_obj_index]])
 all_objects.drop([x[0] for x in closest_obj_index], axis=0, inplace=True)
-my_objects_small = np.array(all_objects.iloc[:])
+my_objects = np.array(all_objects.iloc[:])
 
 # *******************************************************************************
 # %% codecell - Generating Metric Inverted file
@@ -64,11 +64,11 @@ def compute_d_sfd(gdf_object, gdf_ref):
 obj_to_ref = []
 
 
-for obj in range(len(my_objects_small)):
+for obj in range(len(my_objects)):
 
     # Columnwise sum after matrix operation A - B , on duplication each object to length of reference list for parallelized computing
-    distance_ref = compute_d_sfd([my_objects_small[obj][:]
-                                  for i in range(my_ref_small.shape[0])], my_ref_small)
+    distance_ref = compute_d_sfd([my_objects[obj][:]
+                                  for i in range(my_refs.shape[0])], my_refs)
 
     # Partial sorting and slicing top 10 ranks through argpartition function
     top_ten_unsorted_indexes = np.argpartition(distance_ref, 10)[:10]
@@ -100,7 +100,7 @@ f = open("output full MIF - PCA.txt", "a")
 MIF_file = []
 
 # List of tuples -(object number,corresponding rank) for each reference derived from obj_to_ref
-for reference in range(len(my_ref_small)):
+for reference in range(len(my_refs)):
 
     # Try block to handle references that are not close to any object, and continue appending the text file
     try:
@@ -142,9 +142,9 @@ def compute_d_sfd2(gdf_object, gdf_ref):
 
 for query_index in query_index_array:
 
-    query_object = np.array(my_objects_small[query_index][:])
+    query_object = np.array(my_objects[query_index][:])
     dist_closest_ref = compute_d_sfd([query_object[:]
-                                      for x in range(len(my_ref_small))], my_ref_small)
+                                      for x in range(len(my_refs))], my_refs)
 
     # Selecting the closest 10 references to query in unsorted form
     index_top10unsorted_ref = np.argpartition(dist_closest_ref, 10)[:10]
@@ -161,7 +161,7 @@ for query_index in query_index_array:
     ranks2 = sorted(ranks1, key=lambda x: x[0])
     ranks2 = np.array([y[1] for y in ranks2])
     accum = []
-    for obj in range(len(my_objects_small)):
+    for obj in range(len(my_objects)):
 
         if(np.mod(obj, 100000) == 0):
             print(f'iterated for obj# {obj}')
@@ -185,8 +185,8 @@ for query_index in query_index_array:
         object_ids = []
 
         # change line for external object
-        dist_query = compute_d_sfd([my_objects_small[query_index][:] for x in range(
-            len(selected_objs))], my_objects_small[selected_objs][:])
+        dist_query = compute_d_sfd([my_objects[query_index][:] for x in range(
+            len(selected_objs))], my_objects[selected_objs][:])
 
         # Handling exceptions when there is only one object
         try:
@@ -210,8 +210,8 @@ for query_index in query_index_array:
 
         Average_dist = []
         # Printing the closeness of similar objects, just for comparing with randomly selecting objects
-        distance_query = compute_d_sfd([my_objects_small[query_index][:] for x in range(
-            len(final_objects))], my_objects_small[final_objects][:])
+        distance_query = compute_d_sfd([my_objects[query_index][:] for x in range(
+            len(final_objects))], my_objects[final_objects][:])
         print([x for x in zip(final_objects, distance_query)])
         print(f'Average distance of similar 20 objects: {np.mean(distance_query)}')
         Average_dist.append(np.mean(distance_query))
@@ -247,7 +247,7 @@ for query in query_list:
 
     query_object = np.array(query[:])
     dist_closest_ref = compute_d_sfd([query_object[:]
-                                      for x in range(len(my_ref_small))], my_ref_small)
+                                      for x in range(len(my_refs))], my_refs)
 
     # Selecting the closest 10 references to query in unsorted form
     index_top10unsorted_ref = np.argpartition(dist_closest_ref, 10)[:10]
@@ -256,7 +256,8 @@ for query in query_list:
         val_top10unsorted_ref.append(dist_closest_ref[x])
 
     # Sorting tuples based on distance of query to each reference
-    sorted_tuples = sorted(zip(index_top10unsorted_ref, val_top10unsorted_ref), key=lambda x: x[1])
+    sorted_tuples = sorted(
+        zip(index_top10unsorted_ref, val_toandp10unsorted_ref), key=lambda x: x[1])
     # return the (index_of_reference,position) as a list and save as ranks1
 
     ranks1 = [(j[0], i) for i, j in enumerate(sorted_tuples)]
@@ -264,7 +265,7 @@ for query in query_list:
     ranks2 = sorted(ranks1, key=lambda x: x[0])
     ranks2 = np.array([y[1] for y in ranks2])
     accum = []
-    for obj in range(len(my_objects_small)):
+    for obj in range(len(my_objects)):
 
         if(np.mod(obj, 100000) == 0):
             print(f'iterated for obj# {obj}')
@@ -297,7 +298,7 @@ for query in query_list:
         ranks2 = sorted(ranks1, key=lambda x: x[0])
         ranks2 = np.array([y[1] for y in ranks2])
         accum = []
-        for obj in range(len(my_objects_small)):
+        for obj in range(len(my_objects)):
 
             if(np.mod(obj, 100000) == 0):
                 print(f'iterated for obj# {obj}')
@@ -318,7 +319,7 @@ for query in query_list:
     print(f'query array is: {query[:]}')
     obj_ids_final = [x[0] for x in final[:20]]
     print(f'similar object arrays are:')
-    print(my_objects_small[obj_ids_final])
+    print(my_objects[obj_ids_final])
 
 
 # %% codecell
