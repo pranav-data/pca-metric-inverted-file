@@ -7,7 +7,7 @@ from sklearn.decomposition import PCA
 
 import pandas as pd
 import numpy as np
-import random
+
 
 # Importing all objects as a DataFrame from the csv file
 all_objects = pd.read_csv('D:\Github\pca-mif\cleaned_data.csv')
@@ -257,7 +257,7 @@ for query in query_list:
 
     # Sorting tuples based on distance of query to each reference
     sorted_tuples = sorted(
-        zip(index_top10unsorted_ref, val_toandp10unsorted_ref), key=lambda x: x[1])
+        zip(index_top10unsorted_ref, val_top10unsorted_ref), key=lambda x: x[1])
     # return the (index_of_reference,position) as a list and save as ranks1
 
     ranks1 = [(j[0], i) for i, j in enumerate(sorted_tuples)]
@@ -309,7 +309,7 @@ for query in query_list:
                 # Using enumerate function tofind position to compute the accumulator
 
                 one = np.array([(i, j) for i, j in enumerate(obj_to_ref[obj][:3])])
-                two = np.array([y[0] for y in sorted(one, key=lambda x:x[1])])
+                two = np.array([y[0] for y in sorted(one, key=lambda x: x[1])])
                 accum.append((obj, np.sum(compute_d_sfd2(two, ranks2))))
 
         final = np.array(sorted(accum, key=lambda x: x[1]))
