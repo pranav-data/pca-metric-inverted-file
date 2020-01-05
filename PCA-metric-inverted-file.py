@@ -10,32 +10,32 @@ import numpy as np
 import random
 
 # Importing all objects as a DataFrame from the csv file
-all_objects = pd.read_csv('cleaned_data.csv')
+all_objects = pd.read_csv('D:\Github\pca-mif\cleaned_data.csv')
 
 # Converting to numpy array for compute speed
 my_objects_small = np.array(all_objects.iloc[:])
 
 pca1 = PCA(n_components=1)
 data = my_objects_small
-y = np.array(np.round(pca1.fit_transform(data), 1))
+y = np.array(np.round(pca1.fit_transform(data), 0))
 y1 = pca1.explained_variance_ratio_
 
 # Printing the explained variance in % from major principal component alone
 print(f'Explained variance in %: {y1*100}')
 
 # Selecting 1000 targets along the range of major principal component (rounded to one decimal point)
-principal_axis_targets = np.array(np.round(np.linspace(min(y), max(y), 1000), 1))
+principal_axis_targets = np.array(np.round(np.linspace(min(y), max(y), 1000), 0))
 
-
+# List to store indices of objects closests to each object
 closest_obj_index = []
 for ref in range(1000):
     # Duplicating each target for each object to apply accelerated matrix numpy operations
-    array_principal_axis_targets = [principal_axis_targets[ref] for x in range(y.shape[0])]
     # Selecting the closest object index position for each of the 1000 targets
-    B = np.argmin(np.abs(array_principal_axis_targets-y), axis=0)
+    B = np.argmin(np.abs(principal_axis_targets[ref]-y[:]), axis=0)
     closest_obj_index.append(B)
-    y[B] = 1000000  # Reassigning each closest object away from transformed dataset to obtain 1000 unique objects close to targets
-    if (np.mod(ref, 10) == 0):
+    # Reassigning each closest object away from transformed dataset to obtain 1000 unique objects close to targets
+    y[B] = 1000000000
+    if (np.mod(ref, 100) == 0):
         print(f'ref#{ref} computed')  # Progress tracker
 print(f'Unique references generated:{len(np.unique(closest_obj_index))}')  # Rechecking uniqueness
 
@@ -122,6 +122,7 @@ f.close()
 # *******************************************************************************
 
 # %% codecell
+# User input to determine number of queries to find similar Objects
 trials = input('enter the number of random queries among the list of objects to test:')
 # %% codecell
 # Slides algorithm LOR method - Existing objects query
@@ -134,7 +135,7 @@ print(query_index_array)
 
 
 def compute_d_sfd2(gdf_object, gdf_ref):
-    # columnwise ie feature-wise estimation of distance of object to reference
+
     dist = np.sum(np.abs(gdf_object[:]-gdf_ref[:]))
     return dist
 
@@ -240,12 +241,6 @@ print(query_list)
 
 # outside objects
 no_correct = 0
-
-
-def compute_d_sfd2(gdf_object, gdf_ref):
-    # columnwise ie feature-wise estimation of distance of object to reference
-    dist = np.sum(np.abs(gdf_object[:]-gdf_ref[:]))
-    return dist
 
 
 for query in query_list:
