@@ -80,7 +80,7 @@ for obj in range(len(my_objects)):
         # Finding the actual values of d_sfd from the top_ten_unsorted_indexes
         top_ten_unsorted_values.append(distance_ref[x])
 
-    # Sorting only the top ten indexes by using zip function, with distances computed as key
+    # Sorting only the top ten indexes by using zip function, with spearman footrule distances computed as key
     sorted_top_ten_tuples = sorted(
         zip(top_ten_unsorted_indexes, top_ten_unsorted_values), key=lambda x: x[1])
 
@@ -99,17 +99,21 @@ obj_to_ref = np.array(obj_to_ref)
 
 # Open file to output Metric inverted file aka MIF, as an appendable state of .txt file
 f = open("output full MIF - PCA.txt", "a")
+
+# Indexed metric inverted file to generate from L~OR
 MIF_file = []
 
 # List of tuples -(object number,corresponding rank) for each reference derived from obj_to_ref
 for reference in range(len(my_refs)):
 
-    # Try block to handle references that are not close to any object, and continue appending the text file
+    # Try block to handle references that are not close to any object, and continue appending the text file without freezing the execution of the loop
     try:
 
+        # Returns the indices of format [row,col] in obj_to_ref where boolean condition is true
         y = np.argwhere(obj_to_ref == reference)
         tup = [(int(z[0]), int(z[1])) for z in y]
 
+        # Labelling each reference prior to printing the MIF corresponding to it
         print(str('ref_no')+' '+str(reference)+':'+'\t', tup, file=f)
         MIF_file.append(tup)
 
@@ -126,15 +130,23 @@ f.close()
 
 # %% codecell
 # User input to determine number of queries to find similar Objects
-trials = input('enter the number of random queries among the list of objects to test:')
+# trials = input('enter the number of random queries among the list of objects to test:')
+
+trials = 20
+
+
 # %% codecell
-# Slides algorithm LOR method - Existing objects query
+# Querying for similar objects when the query is a subset of object list
 
 no_correct = 0
+# Seeding the random number generator to compare the performance with and without PCA to select references
 np.random.seed(1000000)
 
+# Selecting 'trials' number of objects to query for similar objects
 query_index_array = np.random.randint(0, len(all_objects), int(trials))
 print(query_index_array)
+
+# Function to compute spearman footrule distance for all axes
 
 
 def compute_d_sfd2(gdf_object, gdf_ref):
@@ -163,22 +175,25 @@ for query_index in query_index_array:
     # Sort the list based on index_of_reference to compute the difference in rank,thereby establishing similarity
     ranks2 = sorted(ranks1, key=lambda x: x[0])
     ranks2 = np.array([y[1] for y in ranks2])
+    # Initiating an accumulator to decide which objects are closest to query as per the algorithm
     accum = []
     for obj in range(len(my_objects)):
 
         if(np.mod(obj, 100000) == 0):
-            print(f'iterated for obj# {obj}')
+            print(f'iterated for obj# {obj}')  # Progress tracker
 
         # If an object has the same references in the top 10 closest references as the query, then compute accumulator
         if(np.isin(index_top10unsorted_ref, obj_to_ref[obj]).all()):
 
-            # Using enumerate function tofind position to compute the accumulator
+            # Using enumerate function to find the position to compute the accumulator
 
             one = np.array([(i, j) for i, j in enumerate(obj_to_ref[obj])])
             two = np.array([y[0] for y in sorted(one, key=lambda x:x[1])])
+            # Appending a tuple of object number and spearman footrule distance of similar Objects
             accum.append((obj, np.sum(compute_d_sfd2(two, ranks2))))
 
     # Final sorted tuples of object id and corresponding accumulator
+    # Closest in terms of ranks will be determined as most similar object as per the algorithm
     final = np.array(sorted(accum, key=lambda x: x[1]))
 
     # If all accumulators in 20 similarity objects are equal then recompute distance of all objects with equal accumulator and sort top 20
@@ -187,11 +202,11 @@ for query_index in query_index_array:
         selected_objs = [x[0] for x in final if (x[1] == final[0][1])]
         object_ids = []
 
-        # change line for external object
+        # Recomputing spearman footrule distance to find most similar objects to the query (extension to basic algorithm)
         dist_query = compute_d_sfd([my_objects[query_index][:] for x in range(
             len(selected_objs))], my_objects[selected_objs][:])
 
-        # Handling exceptions when there is only one object
+        # Handling exceptions when there is only one object that is similar
         try:
             top_20_indexes = np.argpartition(dist_query, 20)[:20]
             for z in top_20_indexes:
@@ -211,7 +226,9 @@ for query_index in query_index_array:
             f'accumulator array for {query_index} is {final[:20]}, where first number in ordered pair is object id and second number is accumulator ')
         final_objects = [x[0] for x in final[:20]]
 
+        # List of distances of similar objects relative to the query object
         Average_dist = []
+
         # Printing the closeness of similar objects, just for comparing with randomly selecting objects
         distance_query = compute_d_sfd([my_objects[query_index][:] for x in range(
             len(final_objects))], my_objects[final_objects][:])
@@ -219,14 +236,17 @@ for query_index in query_index_array:
         print(f'Average distance of similar 20 objects: {np.mean(distance_query)}')
         Average_dist.append(np.mean(distance_query))
         if (np.isin(query_index, [x[0] for x in final])):
+            # If query object is one of the similarity objects, Then add to number correct
             no_correct += 1
 
-# If query object is one of the similarity objects, Then add to number correct
+# Segment to compute accuracy after all queries are run
+
 print(f'Percentage accuracy of search:{no_correct*100/int(trials)}')
 print(
-    f'Average distanceof top 20 similar objects through PCA reference selection is {np.mean(Average_dist)}')
+    f'Average distance of top 20 similar objects through PCA reference selection is {np.mean(Average_dist)}')
 
 # %% codecell
+#
 trials = input('enter the number of random queries among the list of objects to test:')
 
 
