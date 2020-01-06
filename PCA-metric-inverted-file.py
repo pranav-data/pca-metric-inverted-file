@@ -17,16 +17,17 @@ my_objects = np.array(all_objects.iloc[:])
 
 pca1 = PCA(n_components=1)
 data = my_objects
-y = np.array(np.round(pca1.fit_transform(data), 0))
+# Projecting the objects along the major principal component. 'y' is the projection of each object
+y = np.array(np.round(pca1.fit_transform(data), 1))
 y1 = pca1.explained_variance_ratio_
 
 # Printing the explained variance in % from major principal component alone
 print(f'Explained variance in %: {y1*100}')
 
 # Selecting 1000 targets along the range of major principal component (rounded to one decimal point)
-principal_axis_targets = np.array(np.round(np.linspace(min(y), max(y), 1000), 0))
+principal_axis_targets = np.array(np.round(np.linspace(min(y), max(y), 1000), 1))
 
-# List to store indices of objects closests to each object
+# List to store indices of objects closest to each target on the major principal component
 closest_obj_index = []
 for ref in range(1000):
     # Duplicating each target for each object to apply accelerated matrix numpy operations
@@ -56,7 +57,8 @@ my_objects = np.array(all_objects.iloc[:])
 def compute_d_sfd(gdf_object, gdf_ref):
     # columnwise ie feature-wise estimation of distance of object to reference
     dist = np.sum(np.abs(gdf_object[:]-gdf_ref[:]), axis=1)
-    return dist
+    # Rounding distances to one decimal point
+    return np.round(dist, 1)
 
 
 # List to store 10 closest references with their corresponding ranks (0 to 9) for each object
@@ -66,7 +68,7 @@ obj_to_ref = []
 
 for obj in range(len(my_objects)):
 
-    # Columnwise sum after matrix operation A - B , on duplication each object to length of reference list for parallelized computing
+    # Columnwise sum after matrix operation A - B , on duplicating each object to length of reference list for parallelized computing
     distance_ref = compute_d_sfd([my_objects[obj][:]
                                   for i in range(my_refs.shape[0])], my_refs)
 
@@ -111,7 +113,8 @@ for reference in range(len(my_refs)):
         print(str('ref_no')+' '+str(reference)+':'+'\t', tup, file=f)
         MIF_file.append(tup)
 
-        print(f'ref#{reference} data appended')  # Progress tracker
+        if(np.mod(reference, 50) == 0):
+            print(f'ref#{reference} data appended')  # Progress tracker
 
     except:
 
