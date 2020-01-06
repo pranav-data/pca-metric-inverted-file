@@ -214,8 +214,9 @@ for query_index in query_index_array:
         except:
             object_ids = final
 
-        print('Accumulator is same minimum value for more than 20 objects!')
-        print(f'accumulator array for {query_index} after double checking distance is {object_ids}')
+        print('\nAccumulator is same minimum value for more than 20 objects!')
+        print(
+            f'\naccumulator array for {query_index} after double checking distance is {object_ids}')
         if (np.isin(query_index, object_ids)):
             no_correct += 1
 
@@ -223,7 +224,7 @@ for query_index in query_index_array:
 
         # Return twenty similar objects as computed by original algorithm
         print(
-            f'accumulator array for {query_index} is {final[:20]}, where first number in ordered pair is object id and second number is accumulator ')
+            f'\naccumulator array for {query_index} is {final[:20]}, where first number in ordered pair is object id and second number is accumulator\n ')
         final_objects = [x[0] for x in final[:20]]
 
         # List of distances of similar objects relative to the query object
@@ -233,7 +234,7 @@ for query_index in query_index_array:
         distance_query = compute_d_sfd([my_objects[query_index][:] for x in range(
             len(final_objects))], my_objects[final_objects][:])
         print([x for x in zip(final_objects, distance_query)])
-        print(f'Average distance of similar 20 objects: {np.mean(distance_query)}')
+        print(f'\nAverage distance of similar 20 objects: {np.mean(distance_query)}\n')
         Average_dist.append(np.mean(distance_query))
         if (np.isin(query_index, [x[0] for x in final])):
             # If query object is one of the similarity objects, Then add to number correct
@@ -241,19 +242,23 @@ for query_index in query_index_array:
 
 # Segment to compute accuracy after all queries are run
 
-print(f'Percentage accuracy of search:{no_correct*100/int(trials)}')
+print(f'\nPercentage accuracy of search:{no_correct*100/int(trials)}\n')
 print(
-    f'Average distance of top 20 similar objects through PCA reference selection is {np.mean(Average_dist)}')
+    f'Average distance of top 20 similar objects through PCA reference selection is {np.mean(Average_dist)}\n')
 
+###############################################################################
 # %% codecell
-#
-trials = input('enter the number of random queries among the list of objects to test:')
+# segment to generate foreign objects based on the range for each column in the dataset
 
+#trials = input('enter the number of random queries among the list of objects to test:')
+trials = 10
 
 columns_min = pd.DataFrame.min(all_objects, axis=0)
 columns_max = pd.DataFrame.max(all_objects, axis=0)
 
+print(f'\nRange of each column in the dataset represented as a tuple (column_minimum, column_maximum) is:')
 print([x for x in zip(columns_min, columns_max)])
+print('\n\n')
 query_list = []
 for trial in range(int(trials)):
     query_list.append([int(np.random.randint(x[0], x[1], 1))
@@ -262,7 +267,7 @@ print(query_list)
 # %% codecell
 
 
-# outside objects
+# Querying of foreign objects to search for similar objects in dataset
 no_correct = 0
 
 
@@ -305,6 +310,7 @@ for query in query_list:
     # Final sorted tuples of object id and corresponding accumulator
     final = np.array(sorted(accum, key=lambda x: x[1]))
 
+    # Handling the case where there are no similar objects as the query, then look for a match for closest 3 references instead of 10
     if len(final) == 0:
         index_top10unsorted_ref = np.argpartition(dist_closest_ref, 3)[:3]
         val_top10unsorted_ref = []
@@ -326,7 +332,7 @@ for query in query_list:
             if(np.mod(obj, 100000) == 0):
                 print(f'iterated for obj# {obj}')
 
-        # If an object has the same references in the top 10 closest references as the query, then compute accumulator
+        # If an object has the same references in the top 3 closest references as the query, then compute accumulator
             if(np.isin(index_top10unsorted_ref, obj_to_ref[obj][:3]).all()):
 
                 # Using enumerate function tofind position to compute the accumulator
