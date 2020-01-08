@@ -262,6 +262,8 @@ print(f'\nRange of each column in the dataset represented as a tuple (column_min
 print([x for x in zip(columns_min, columns_max)])
 print('\n\n')
 
+np.random.seed(1000)
+
 # query_list holds a list of lists, where each list is a single query
 query_list = []
 for trial in range(int(trials)):
@@ -350,9 +352,10 @@ for query in query_list:
         final = np.array(sorted(accum, key=lambda x: x[1]))
 
     # Return twenty similar objects as computed by original algorithm
-    print(f'(obj_id,accumulator) for query  is {final[:20]}')
+    parameter = int(min(len(final), 20))
+    print(f'(obj_id,accumulator) for query is {final[:parameter]}')
     print(f'query array is: {query[:]}')
-    obj_ids_final = [x[0] for x in final[:20]]
+    obj_ids_final = [x[0] for x in final[:parameter]]
     print(f'similar object arrays are:')
     print(my_objects[obj_ids_final])
 
