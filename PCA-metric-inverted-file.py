@@ -253,21 +253,25 @@ print(
 #trials = input('enter the number of random queries among the list of objects to test:')
 trials = 10
 
+# Finding the range of values for each column aka feature in the dataframe
 columns_min = pd.DataFrame.min(all_objects, axis=0)
 columns_max = pd.DataFrame.max(all_objects, axis=0)
 
+# Printing the range of each column as tuple (min,max)
 print(f'\nRange of each column in the dataset represented as a tuple (column_minimum, column_maximum) is:')
 print([x for x in zip(columns_min, columns_max)])
 print('\n\n')
+
+# query_list holds a list of lists, where each list is a single query
 query_list = []
 for trial in range(int(trials)):
     query_list.append([int(np.random.randint(x[0], x[1], 1))
                        for x in zip(columns_min, columns_max)])
 print(query_list)
+
+###############################################################################
 # %% codecell
-
-
-# Querying of foreign objects to search for similar objects in dataset
+# Searching the index for similar objects against foreign objects that were randomly generated in the previous block
 no_correct = 0
 
 
@@ -286,9 +290,10 @@ for query in query_list:
     # Sorting tuples based on distance of query to each reference
     sorted_tuples = sorted(
         zip(index_top10unsorted_ref, val_top10unsorted_ref), key=lambda x: x[1])
-    # return the (index_of_reference,position) as a list and save as ranks1
 
+    # return the (index_of_reference,position) as a list and save as ranks1
     ranks1 = [(j[0], i) for i, j in enumerate(sorted_tuples)]
+
     # Sort the list based on index_of_reference to compute the difference in rank,thereby establishing similarity
     ranks2 = sorted(ranks1, key=lambda x: x[0])
     ranks2 = np.array([y[1] for y in ranks2])
@@ -317,15 +322,16 @@ for query in query_list:
         for x in index_top10unsorted_ref:
             val_top10unsorted_ref.append(dist_closest_ref[x])
 
-    # Sorting tuples based on distance of query to each reference
+        # Sorting tuples based on distance of query to each reference
         sorted_tuples = sorted(
             zip(index_top10unsorted_ref, val_top10unsorted_ref), key=lambda x: x[1])
-    # return the (index_of_reference,position) as a list and save as ranks1
 
+        # return the (index_of_reference,position) as a list and save as ranks1
         ranks1 = [(j[0], i) for i, j in enumerate(sorted_tuples)]
-    # Sort the list based on index_of_reference to compute the difference in rank,thereby establishing similarity
+        # Sort the list based on index_of_reference to compute the difference in rank,thereby establishing similarity
         ranks2 = sorted(ranks1, key=lambda x: x[0])
         ranks2 = np.array([y[1] for y in ranks2])
+        # Initiating an accumulator to decide which objects are closest to query as per the algorithm
         accum = []
         for obj in range(len(my_objects)):
 
@@ -350,5 +356,5 @@ for query in query_list:
     print(f'similar object arrays are:')
     print(my_objects[obj_ids_final])
 
-
+###############################################################################
 # %% codecell
