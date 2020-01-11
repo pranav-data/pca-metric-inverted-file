@@ -1,6 +1,8 @@
 #!/usr/local/bin/python3
 
-# %% codecell - Implementing PCA algorithm along the Principal component with highest explained variance
+# %% codecell
+"""Implementing PCA algorithm along the Principal component
+with highest explained variance"""
 
 # Nomenclature: object = row in dataset, reference = subset of objects to aid in querying
 from sklearn.decomposition import PCA
@@ -10,43 +12,60 @@ import numpy as np
 
 
 # Importing all objects as a DataFrame from the csv file
-all_objects = pd.read_csv('D:\Github\pca-mif\cleaned_data.csv')
+ALL_OBJECTS = pd.read_csv('D:\Github\pca-mif\cleaned_data.csv')
 
 # Converting to numpy array for compute speed
-my_objects = np.array(all_objects.iloc[:])
-
-pca1 = PCA(n_components=1)
-data = my_objects
-# Projecting the objects along the major principal component. 'y' is the projection of each object
-y = np.array(np.round(pca1.fit_transform(data), 1))
-y1 = pca1.explained_variance_ratio_
-
-# Printing the explained variance in % from major principal component alone
-print(f'Explained variance in %: {y1*100}')
-
-# Selecting 1000 targets along the range of major principal component (rounded to one decimal point)
-principal_axis_targets = np.array(np.round(np.linspace(min(y), max(y), 1000), 1))
-
-# List to store indices of objects closest to each target on the major principal component
-closest_obj_index = []
-for ref in range(1000):
-    # Duplicating each target for each object to apply accelerated matrix numpy operations
-    # Selecting the closest object index position for each of the 1000 targets
-    B = np.argmin(np.abs(principal_axis_targets[ref]-y[:]), axis=0)
-    closest_obj_index.append(B)
-    # Reassigning each closest object away from transformed dataset to obtain 1000 unique objects close to targets
-    y[B] = 1000000000
-    if (np.mod(ref, 100) == 0):
-        print(f'ref#{ref} computed')  # Progress tracker
-print(f'Unique references generated:{len(np.unique(closest_obj_index))}')  # Rechecking uniqueness
-
-# *******************************************************************************
+MY_OBJECTS = np.array(ALL_OBJECTS.iloc[:])
 
 
-# %% codecell - References  1000 targets & Objects - remaining objects
-my_refs = np.array(all_objects.iloc[[x[0] for x in closest_obj_index]])
-all_objects.drop([x[0] for x in closest_obj_index], axis=0, inplace=True)
-my_objects = np.array(all_objects.iloc[:])
+def implement_pca_targets(gdf_objects, no_components):
+    """
+    This function implements Principal Component Analysis and determines
+    1000 targets along the range of the projections of data points along this
+    axis, therby capturing maximum variance.
+
+    We do a check of explained variance ratio for the dataset to gauge the
+    effectiveness of our approach.
+
+    """
+    pca1 = PCA(n_components=no_components)
+    data = gdf_objects
+    # Projecting the objects along the major principal component.
+    # 'y' is the projection of each object
+    y = np.array(np.round(pca1.fit_transform(data), 1))
+    y1 = pca1.explained_variance_ratio_
+
+    # Printing the explained variance in % from major principal component alone
+    print(f'Explained variance in %: {y1*100}')
+
+    # Selecting 1000 targets along the range of major principal component
+    # (rounded to one decimal point)
+    principal_axis_targets = np.array(np.round(np.linspace(min(y), max(y), 1000), 1))
+
+    # List to store indices of objects closest to each target on the major principal component
+    closest_obj_index = []
+    for ref in range(1000):
+        # Duplicating each target for each object to apply accelerated matrix numpy operations
+        # Selecting the closest object index position for each of the 1000 targets
+        min_pos = np.argmin(np.abs(principal_axis_targets[ref]-y[:]), axis=0)
+        closest_obj_index.append(min_pos)
+        # Reassigning each closest object away from transformed dataset
+        # to obtain 1000 unique objects close to targets
+        y[min_pos] = 1000000000
+        if np.mod(ref, 100) == 0:
+            print(f'ref#{ref} computed')  # Progress tracker
+    # Rechecking uniqueness
+    print(f'Unique references generated:{len(np.unique(closest_obj_index))}')
+
+    pca_refs = np.array(gdf_objects.iloc[[x[0] for x in closest_obj_index]])
+    gdf_objects.drop([x[0] for x in closest_obj_index], axis=0, inplace=True)
+    pca_objects = np.array(gdf_objects.iloc[:])
+
+    return pca_objects, pca_refs
+# *****************************************************************************
+
+
+MY_OBJECTS, MY_REFS = implement_pca_targets(MY_OBJECTS, 1)
 
 # *******************************************************************************
 # %% codecell - Generating Metric Inverted file
@@ -110,8 +129,8 @@ for reference in range(len(my_refs)):
     try:
 
         # Returns the indices of format [row,col] in obj_to_ref where boolean condition is true
-        y = np.argwhere(obj_to_ref == reference)
-        tup = [(int(z[0]), int(z[1])) for z in y]
+        matched_refs = np.argwhere(obj_to_ref == reference)
+        tup = [(int(z[0]), int(z[1])) for z in matched_refs]
 
         # Labelling each reference prior to printing the MIF corresponding to it
         print(str('ref_no')+' '+str(reference)+':'+'\t', tup, file=f)
@@ -143,7 +162,7 @@ no_correct = 0
 np.random.seed(1000000)
 
 # Selecting 'trials' number of objects to query for similar objects
-query_index_array = np.random.randint(0, len(all_objects), int(trials))
+query_index_array = np.random.randint(0, len(ALL_OBJECTS), int(trials))
 print(query_index_array)
 
 # Function to compute spearman footrule distance for all axes
@@ -254,8 +273,8 @@ print(
 trials = 10
 
 # Finding the range of values for each column aka feature in the dataframe
-columns_min = pd.DataFrame.min(all_objects, axis=0)
-columns_max = pd.DataFrame.max(all_objects, axis=0)
+columns_min = pd.DataFrame.min(ALL_OBJECTS, axis=0)
+columns_max = pd.DataFrame.max(ALL_OBJECTS, axis=0)
 
 # Printing the range of each column as tuple (min,max)
 print(f'\nRange of each column in the dataset represented as a tuple (column_minimum, column_maximum) is:')
