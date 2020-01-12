@@ -57,9 +57,9 @@ def implement_pca_targets(gdf_objects, no_components):
     # Rechecking uniqueness
     print(f'Unique references generated:{len(np.unique(closest_obj_index))}')
 
-    pca_refs = np.array(gdf_objects.iloc[[x[0] for x in closest_obj_index]])
-    gdf_objects.drop([x[0] for x in closest_obj_index], axis=0, inplace=True)
-    pca_objects = np.array(gdf_objects.iloc[:])
+    pca_refs = np.array(ALL_OBJECTS.iloc[[x[0] for x in closest_obj_index]])
+    ALL_OBJECTS.drop([x[0] for x in closest_obj_index], axis=0, inplace=True)
+    pca_objects = np.array(ALL_OBJECTS.iloc[:])
 
     return pca_objects, pca_refs
 # *****************************************************************************
