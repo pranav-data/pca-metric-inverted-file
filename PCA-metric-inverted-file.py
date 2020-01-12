@@ -232,8 +232,7 @@ def finalist(query, my_objects, my_refs, no_similar_objects_returned):
         return np.array(sorted(accum, key=lambda x: x[1]))
 
 
-def search_index_array(final, query, my_objects, my_refs,
-                       no_similar_objects_returned):
+def search_index_array(final, query, my_objects, no_similar_objects_returned):
     """If all accumulators in 'no_similar_objects_returned' are equal
     then recompute distance of all objects with equal accumulator and sort
     top 'no_similar_objects_returned"""
@@ -243,59 +242,57 @@ def search_index_array(final, query, my_objects, my_refs,
         selected_objs = [x[0] for x in final if x[1] == final[0][1]]
         object_ids = []
 
-    # Recomputing spearman footrule distance to find most similar objects to the query (extension to basic algorithm)
-        dist_query = compute_d_sfd([my_objects[query][:] for x in range(
-            len(selected_objs))], my_objects[selected_objs][:])
+    # Recomputing spearman footrule distance to find most similar objects
+    # to the query (extension to basic algorithm)
+        dist_query = compute_d_sfd([my_objects[query][:]
+                                    for x in range(len(selected_objs))],
+                                   my_objects[selected_objs][:])
 
-    try:
-        top_20_indexes = np.argpartition(dist_query, no_similar_objects_returned)[
-            :no_similar_objects_returned]
-        for z in top_20_indexes:
-            object_ids.append(selected_objs[z])
-    except ValueError():
-        # Handling exceptions when there is only one object that is similar
-        print('ValueError noted!')
-        object_ids = final
-    except IndexError():
-        print('IndexError noted!')
-        object_ids = final
+        try:
+            top_20_indexes = np.argpartition(dist_query, no_similar_objects_returned)[
+                :no_similar_objects_returned]
+            for index2 in top_20_indexes:
+                object_ids.append(selected_objs[index2])
+        except ValueError():
+            # Handling exceptions when there is only one object that is similar
+            print('ValueError noted!')
+            object_ids = final
+        except IndexError():
+            print('IndexError noted!')
+            object_ids = final
 
-    print('\nAccumulator is same minimum value for more than 20 objects!')
-    print(
-        f'\naccumulator array for {query} after double checking distance is {object_ids}')
-    if np.isin(query, object_ids):
-        NO_CORRECT += 1
-
+        print('\nAccumulator is same minimum value for more than 20 objects!')
+        print(
+            f'\naccumulator array for {query} after double checking distance is {object_ids}')
+        distance_query = compute_d_sfd([my_objects[query][:] for x in range(
+            len(object_ids))], my_objects[object_ids][:])
+        print(f'\nAverage distance of similar objects: {np.mean(distance_query)}\n')
     else:
 
-        # Return twenty similar objects as computed by original algorithm
+            # Return twenty similar objects as computed by original algorithm
         print(f'\naccumulator array for {query} is {final[:20]}) where')
         print(' first number in ordered pair is object id and second number is accumulator\n')
         final_objects = [x[0] for x in final[:20]]
 
-        # List of distances of similar objects relative to the query object
-        Average_dist = []
-
-        # Printing the closeness of similar objects, just for comparing with randomly selecting objects
+        # Printing the closeness of similar objects, just for comparing
+        # with randomly selecting objects
         distance_query = compute_d_sfd([my_objects[query][:] for x in range(
             len(final_objects))], my_objects[final_objects][:])
         print([x for x in zip(final_objects, distance_query)])
         print(f'\nAverage distance of similar 20 objects: {np.mean(distance_query)}\n')
-        Average_dist.append(np.mean(distance_query))
-        if np.isin(query, [x[0] for x in final]):
-            # If query object is one of the similarity objects, Then add to number correct
-            NO_CORRECT += 1
+
+    return object_ids
 
 
 ###############################################################################
 for query in QUERY_INDEX_ARRAY:
     FINAL = finalist(query, MY_OBJECTS, MY_REFS, 20)
-    search_index_array(FINAL, query, MY_OBJECTS, MY_REFS, 20)
+    OBJECT_IDS = search_index_array(FINAL, query, MY_OBJECTS, 20)
     # Segment to compute accuracy after all queries are run
-
-print(f'\nPercentage accuracy of search:{NO_CORRECT*100/int(TRIALS)}\n')
-print(f'Average distance of top 20 similar objects through PCA reference selection is')
-print(np.mean(Average_dist))
+    if (np.isin(query, [x[0] for x in FINAL]) or np.isin(query, OBJECT_IDS)):
+        # If query object is one of the similarity objects, Then add to number correct
+        NO_CORRECT += 1
+print(f'\nPERCENTAGE ACCURACY OF SEARCH:{NO_CORRECT*100/int(TRIALS)}\n')
 
 ###############################################################################
 # %% codecell
