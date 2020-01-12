@@ -160,7 +160,9 @@ OBJ_TO_REF = compute_lor_mif(MY_OBJECTS, MY_REFS)
 
 # *****************************************************************************
 
+
 # %% codecell
+
 # User input to determine number of queries to find similar Objects
 # TRIALS = input('enter the number of random queries among the list of objects to test:')
 TRIALS = 20
@@ -192,7 +194,7 @@ def finalist(query, my_objects, my_refs, closest_refs):
     if isinstance(query, int):
         query_object = np.array(my_objects[query][:])
     else:
-        query_object = np.array(query[:])
+        query_object = np.array(query)
     dist_closest_ref = compute_d_sfd([query_object[:]
                                       for x in range(len(my_refs))], my_refs)
 
@@ -300,9 +302,6 @@ print(f'\nPERCENTAGE ACCURACY OF SEARCH:{NO_CORRECT*100/int(TRIALS)}\n')
 ###############################################################################
 # %% codecell
 
-# TRIALS = input('enter the number of random queries among the list of objects to test:')
-TRIALS = 10
-
 
 def query_generator(trials):
     """segment to generate foreign objects based on
@@ -324,11 +323,15 @@ def query_generator(trials):
     print(query_list)
     return query_list
 
-
 ###############################################################################
 # %% codecell
 # Searching the index for similar objects against foreign objects that were
 # randomly generated in the previous block
+
+
+# TRIALS = input('enter the number of random queries among the list of objects to test:')
+TRIALS = 10
+
 NO_CORRECT = 0
 QUERY_LIST = query_generator(TRIALS)
 
