@@ -143,140 +143,166 @@ def compute_lor_mif(my_objects, my_refs):
             if np.mod(reference, 50) == 0:
                 print(f'ref#{reference} data appended')  # Progress tracker
 
-        except:
-
+        except IndexError():
+            print(f'index out of bounds error - skipped ref#{reference}')
             continue
-
+        except ValueError():
+            print(f'Value error - skipped ref#{reference}')
+            continue
+        except TypeError():
+            print(f'Type error - skipped ref#{reference}')
+            continue
     file.close()
+    return obj_to_ref
 
 
-compute_lor_mif(MY_OBJECTS, MY_REFS)
+OBJ_TO_REF = compute_lor_mif(MY_OBJECTS, MY_REFS)
 
-# *******************************************************************************
+# *****************************************************************************
 
 # %% codecell
 # User input to determine number of queries to find similar Objects
-# trials = input('enter the number of random queries among the list of objects to test:')
-trials = 20
+# TRIALS = input('enter the number of random queries among the list of objects to test:')
+TRIALS = 20
 
 
 # %% codecell
 # Querying for similar objects when the query is a subset of object list
 
-no_correct = 0
-# Seeding the random number generator to compare the performance with and without PCA to select references
+NO_CORRECT = 0
+# Seeding the random number generator to compare the performance with
+# and without PCA to select references
 np.random.seed(1000000)
 
-# Selecting 'trials' number of objects to query for similar objects
-query_index_array = np.random.randint(0, len(ALL_OBJECTS), int(trials))
-print(query_index_array)
-
-# Function to compute spearman footrule distance for all axes
+# Selecting 'TRIALS' number of objects to query for similar objects
+QUERY_INDEX_ARRAY = np.random.randint(0, len(ALL_OBJECTS), int(TRIALS))
+print(QUERY_INDEX_ARRAY)
 
 
 def compute_d_sfd2(gdf_object, gdf_ref):
-
+    """Function to compute spearman footrule distance for all axes"""
     dist = np.sum(np.abs(gdf_object[:]-gdf_ref[:]))
     return dist
 
 
-for query_index in query_index_array:
+def finalist(query, my_objects, my_refs, no_similar_objects_returned):
+    """Function to return 'final' list of similar objects
+    for each query, without exception handling"""
 
-    query_object = np.array(my_objects[query_index][:])
+    query_object = np.array(my_objects[query][:])
     dist_closest_ref = compute_d_sfd([query_object[:]
                                       for x in range(len(my_refs))], my_refs)
 
     # Selecting the closest 10 references to query in unsorted form
     index_top10unsorted_ref = np.argpartition(dist_closest_ref, 10)[:10]
     val_top10unsorted_ref = []
-    for x in index_top10unsorted_ref:
-        val_top10unsorted_ref.append(dist_closest_ref[x])
+    for index1 in index_top10unsorted_ref:
+        val_top10unsorted_ref.append(dist_closest_ref[index1])
 
-    # Sorting tuples based on distance of query to each reference
-    sorted_tuples = sorted(zip(index_top10unsorted_ref, val_top10unsorted_ref), key=lambda x: x[1])
-    # return the (index_of_reference,position) as a list and save as ranks1
+        # Sorting tuples based on distance of query to each reference
+        sorted_tuples = sorted(
+            zip(index_top10unsorted_ref, val_top10unsorted_ref), key=lambda x: x[1])
+        # return the (index_of_reference,position) as a list
 
-    ranks1 = [(j[0], i) for i, j in enumerate(sorted_tuples)]
-    # Sort the list based on index_of_reference to compute the difference in rank,thereby establishing similarity
-    ranks2 = sorted(ranks1, key=lambda x: x[0])
-    ranks2 = np.array([y[1] for y in ranks2])
-    # Initiating an accumulator to decide which objects are closest to query as per the algorithm
-    accum = []
-    for obj in range(len(my_objects)):
+        # Sort the list based on index_of_reference to compute the difference in rank,
+        # thereby establishing similarity
+        ranks2 = sorted([(j[0], i) for i, j in enumerate(sorted_tuples)], key=lambda x: x[0])
+        ranks2 = np.array([y[1] for y in ranks2])
 
-        if(np.mod(obj, 100000) == 0):
-            print(f'iterated for obj# {obj}')  # Progress tracker
+        # Initiating an accumulator to decide which objects are closest to query
+        accum = []
+        for obj in range(len(my_objects)):
 
-        # If an object has the same references in the top 10 closest references as the query, then compute accumulator
-        if(np.isin(index_top10unsorted_ref, obj_to_ref[obj]).all()):
+            if np.mod(obj, 100000) == 0:
+                print(f'iterated for obj# {obj}')  # Progress tracker
 
-            # Using enumerate function to find the position to compute the accumulator
+            # If an object has the same references in the top 10 closest references as the query,
+            # then compute accumulator
+            if np.isin(index_top10unsorted_ref, OBJ_TO_REF[obj]).all():
 
-            one = np.array([(i, j) for i, j in enumerate(obj_to_ref[obj])])
-            two = np.array([y[0] for y in sorted(one, key=lambda x:x[1])])
-            # Appending a tuple of object number and spearman footrule distance of similar Objects
-            accum.append((obj, np.sum(compute_d_sfd2(two, ranks2))))
+                # Using enumerate function to find the position to compute the accumulator
+                one = np.array([(i, j) for i, j in enumerate(OBJ_TO_REF[obj])])
+                two = np.array([y[0] for y in sorted(one, key=lambda x:x[1])])
+                # Appending a tuple of object number and spearman footrule
+                # distance of similar Objects
+                accum.append((obj, np.sum(compute_d_sfd2(two, ranks2))))
 
-    # Final sorted tuples of object id and corresponding accumulator
-    # Closest in terms of ranks will be determined as most similar object as per the algorithm
-    final = np.array(sorted(accum, key=lambda x: x[1]))
+        # Final sorted tuples of object id and corresponding accumulator
+        # Closest in terms of ranks will be determined as most similar object as per the algorithm
+        return np.array(sorted(accum, key=lambda x: x[1]))
 
-    # If all accumulators in 20 similarity objects are equal then recompute distance of all objects with equal accumulator and sort top 20
-    if(np.equal([x[1] for x in final[:20]], [final[0][1]]*len(final[:20])).all()):
 
-        selected_objs = [x[0] for x in final if (x[1] == final[0][1])]
+def search_index_array(final, query, my_objects, my_refs,
+                       no_similar_objects_returned):
+    """If all accumulators in 'no_similar_objects_returned' are equal
+    then recompute distance of all objects with equal accumulator and sort
+    top 'no_similar_objects_returned"""
+    if np.equal([x[1] for x in final[:no_similar_objects_returned]],
+                [final[0][1]]*len(final[:no_similar_objects_returned])).all():
+
+        selected_objs = [x[0] for x in final if x[1] == final[0][1]]
         object_ids = []
 
-        # Recomputing spearman footrule distance to find most similar objects to the query (extension to basic algorithm)
-        dist_query = compute_d_sfd([my_objects[query_index][:] for x in range(
+    # Recomputing spearman footrule distance to find most similar objects to the query (extension to basic algorithm)
+        dist_query = compute_d_sfd([my_objects[query][:] for x in range(
             len(selected_objs))], my_objects[selected_objs][:])
 
+    try:
+        top_20_indexes = np.argpartition(dist_query, no_similar_objects_returned)[
+            :no_similar_objects_returned]
+        for z in top_20_indexes:
+            object_ids.append(selected_objs[z])
+    except ValueError():
         # Handling exceptions when there is only one object that is similar
-        try:
-            top_20_indexes = np.argpartition(dist_query, 20)[:20]
-            for z in top_20_indexes:
-                object_ids.append(selected_objs[z])
-        except:
-            object_ids = final
+        print('ValueError noted!')
+        object_ids = final
+    except IndexError():
+        print('IndexError noted!')
+        object_ids = final
 
-        print('\nAccumulator is same minimum value for more than 20 objects!')
-        print(
-            f'\naccumulator array for {query_index} after double checking distance is {object_ids}')
-        if (np.isin(query_index, object_ids)):
-            no_correct += 1
+    print('\nAccumulator is same minimum value for more than 20 objects!')
+    print(
+        f'\naccumulator array for {query} after double checking distance is {object_ids}')
+    if np.isin(query, object_ids):
+        NO_CORRECT += 1
 
     else:
 
         # Return twenty similar objects as computed by original algorithm
-        print(
-            f'\naccumulator array for {query_index} is {final[:20]}, where first number in ordered pair is object id and second number is accumulator\n ')
+        print(f'\naccumulator array for {query} is {final[:20]}) where')
+        print(' first number in ordered pair is object id and second number is accumulator\n')
         final_objects = [x[0] for x in final[:20]]
 
         # List of distances of similar objects relative to the query object
         Average_dist = []
 
         # Printing the closeness of similar objects, just for comparing with randomly selecting objects
-        distance_query = compute_d_sfd([my_objects[query_index][:] for x in range(
+        distance_query = compute_d_sfd([my_objects[query][:] for x in range(
             len(final_objects))], my_objects[final_objects][:])
         print([x for x in zip(final_objects, distance_query)])
         print(f'\nAverage distance of similar 20 objects: {np.mean(distance_query)}\n')
         Average_dist.append(np.mean(distance_query))
-        if (np.isin(query_index, [x[0] for x in final])):
+        if np.isin(query, [x[0] for x in final]):
             # If query object is one of the similarity objects, Then add to number correct
-            no_correct += 1
+            NO_CORRECT += 1
 
-# Segment to compute accuracy after all queries are run
 
-print(f'\nPercentage accuracy of search:{no_correct*100/int(trials)}\n')
-print(
-    f'Average distance of top 20 similar objects through PCA reference selection is {np.mean(Average_dist)}\n')
+###############################################################################
+for query in QUERY_INDEX_ARRAY:
+    FINAL = finalist(query, MY_OBJECTS, MY_REFS, 20)
+    search_index_array(FINAL, query, MY_OBJECTS, MY_REFS, 20)
+    # Segment to compute accuracy after all queries are run
+
+print(f'\nPercentage accuracy of search:{NO_CORRECT*100/int(TRIALS)}\n')
+print(f'Average distance of top 20 similar objects through PCA reference selection is')
+print(np.mean(Average_dist))
 
 ###############################################################################
 # %% codecell
 # segment to generate foreign objects based on the range for each column in the dataset
 
-#trials = input('enter the number of random queries among the list of objects to test:')
-trials = 10
+# TRIALS = input('enter the number of random queries among the list of objects to test:')
+TRIALS = 10
 
 # Finding the range of values for each column aka feature in the dataframe
 columns_min = pd.DataFrame.min(ALL_OBJECTS, axis=0)
@@ -291,7 +317,7 @@ np.random.seed(1000)
 
 # query_list holds a list of lists, where each list is a single query
 query_list = []
-for trial in range(int(trials)):
+for trial in range(int(TRIALS)):
     query_list.append([int(np.random.randint(x[0], x[1], 1))
                        for x in zip(columns_min, columns_max)])
 print(query_list)
@@ -299,7 +325,7 @@ print(query_list)
 ###############################################################################
 # %% codecell
 # Searching the index for similar objects against foreign objects that were randomly generated in the previous block
-no_correct = 0
+NO_CORRECT = 0
 
 
 for query in query_list:
